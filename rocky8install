@@ -1,0 +1,108 @@
+#Create VM instance using Rocky Linux 8, allow HTTP traddic for firewall
+#Connect gcloud to VM instance
+
+#Check for updates and upgrades// dnf is the equivalent apt
+sudo dnf update
+sudo dnf upgrade -y
+
+#Install nano// in order to use text editor nano in Rocky8
+sudo dnf install wget nano -y
+
+#Install apache// known as HTTPd
+sudo dnf install httpd
+Y to agree to install
+#Start HTTPd
+sudo systemctl start httpd
+
+#Install PHP to interact with MySQL
+//wordpress needs PHP 7.4 or above so we will install PHP 8.0
+//we install teh remi repository for the latest versions of PHP
+sudo dnf install dnf-utils http://rpms.remirepo.net/enterprise/remi-release-8.rpm 
+y to install
+#enable remi-8
+sudo dnf module enable php:remi-8.0
+#install php 8.0
+sudo dnf install php php-cli php-curl php-mysqlnd php-gd php-opcache php-zip php-intl
+y (three times to install)
+
+#restart system to update changes
+sudo ststemctl restart httpd
+
+#Install MariaDB for MySQL use
+sudo dnf install mariadb-server
+y to install
+#start Mariadb
+sudo systemctl start mariadb
+#check it is running
+sudo systemctl status mariadb
+
+//if it says active, install mysql
+sudo mysql_secure_installation
+//press enter for no password
+Y to set password
+set your own password, re-enter your password
+y to remove anonymous
+Y to disallow root login remotely
+y to remove test database
+y to reload privilege tables
+//change to root user by using 
+sudo su
+//change to mariadb user
+sudo mysql -u root -p
+\q //to quit
+
+#install php and mysql support
+sudo dnf install php-mysql
+
+#restart both http and mariadb
+sudo systemctl restart httpd
+sudo systemctl restart mariadb
+
+#Install Wordpress php modules// requires php module for wordpress to operate
+sudo dnf install php-gd php-soap php-intl php-mysqlnd php-pdo php-pecl-zip
+php-fpm php-opcache php-curl php-zip php-xmlrpc wget
+y to install 
+
+#Restart
+sudo systemctl restart httpd
+sudo systemctl restart mariadb
+
+#Change directory
+cd /var/www/html
+
+#download wordpress
+sudo wget https://wordpress.org/latest.tar.gz
+#extract the package
+sudo tar -xzvf latest.tar.gz
+
+#Create database user on mysql for wordpress
+//change to root then to mariadb
+sudo su
+sudo mysql -u root -p
+//create user
+create user 'wordpress'@'localhost' identified by 'pa*sw**d'; //password
+//create database for wordpress
+create database wordpress;
+//grant all privileges to user you created
+grant all privileges on wordpress.* to 'wordpress'@'localhost';
+/q 
+
+#set up wp-config.php
+//change directory
+cd /var/www/html/wordpress
+//wp-config.php will include your login info
+sudo cp wp-config-sample.php wp-config.php
+sudo nano wp-config.php up wp-config.php
+//change to your information: wordpress, wordpress, your password
+//go to the last line of the page and paste to disable FTP uploads to the site
+define('FS_METHOD','direct');
+save, exit
+
+#change file ownership//apache is equal to www-data
+sudo chown -r apache:apache *
+
+#go to install wordpress
+http://34.16.175.91/wordpress/wp-admin/install.php
+//fill out your information, hit install
+#login
+//now you will be able to access wordpress from you http://YOUR IP ADDRESS/wordpress
